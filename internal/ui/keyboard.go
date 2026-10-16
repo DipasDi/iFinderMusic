@@ -10,7 +10,7 @@ import (
 
 const TracksPerPage = 10
 
-// MainMenuKeyboard returns the persistent reply keyboard shown at the bottom of the chat.
+// MainMenuKeyboard возвращает постоянное меню внизу чата
 func MainMenuKeyboard() *telego.ReplyKeyboardMarkup {
 	return tu.Keyboard(
 		tu.KeyboardRow(
@@ -23,7 +23,7 @@ func MainMenuKeyboard() *telego.ReplyKeyboardMarkup {
 	).WithResizeKeyboard()
 }
 
-// ButtonTrackText formats the label for an inline track button, truncating if necessary.
+// ButtonTrackText форматирует текст для инлайн-кнопки трека
 func ButtonTrackText(m model.Music) string {
 	text := fmt.Sprintf("%s — %s [%s]", m.Author, m.Title, m.Duration)
 	runes := []rune(text)
@@ -33,7 +33,7 @@ func ButtonTrackText(m model.Music) string {
 	return text
 }
 
-// BuildTracksKeyboard builds an inline keyboard with track items and pagination navigation controls.
+// BuildTracksKeyboard формирует инлайн-клавиатуру со списком треков и кнопками перелистывания страниц (пагинации)
 func BuildTracksKeyboard(music []model.Music, page int) *telego.InlineKeyboardMarkup {
 	totalTracks := len(music)
 	if totalTracks == 0 {
@@ -55,17 +55,17 @@ func BuildTracksKeyboard(music []model.Music, page int) *telego.InlineKeyboardMa
 	}
 
 	var rows [][]telego.InlineKeyboardButton
-	// Tracks for the current page
+	// Треки для выбранной страницы
 	for i := start; i < end; i++ {
 		m := music[i]
 		buttonText := ButtonTrackText(m)
-		// Store the global track index in callback_data for download handling
+		// В callback_data передаем глобальный индекс трека для скачивания
 		rows = append(rows, tu.InlineKeyboardRow(
 			tu.InlineKeyboardButton(buttonText).WithCallbackData(fmt.Sprintf("dl_%d", i)),
 		))
 	}
 
-	// Pagination navigation controls row
+	// Строка переключения страниц
 	if totalPages > 1 {
 		var navRow []telego.InlineKeyboardButton
 

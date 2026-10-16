@@ -1,12 +1,13 @@
 package config
 
-import (
-	"bufio"
-	"os"
-	"strings"
+import "os"
+
+const (
+	// DefaultRedisPassword пароль к Redis по умолчанию
+	DefaultRedisPassword = "2e33611d240a42828f6e93ee6da481b3"
 )
 
-// Config holds all application configuration parameters.
+// Config содержит параметры конфигурации бота и сервисов
 type Config struct {
 	BotToken      string
 	RedisAddr     string
@@ -14,41 +15,19 @@ type Config struct {
 	RedisPassword string
 }
 
-// Load reads configuration from environment variables (loading from .env if present).
+// Load считывает конфигурацию из окружения или использует дефолтные значения
 func Load() *Config {
-	loadEnvFile(".env")
+	token := os.Getenv("BOT_TOKEN")
+
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+	if redisPassword == "" {
+		redisPassword = DefaultRedisPassword
+	}
 
 	return &Config{
-		BotToken:      os.Getenv("BOT_TOKEN"),
+		BotToken:      token,
 		RedisAddr:     os.Getenv("REDIS_ADDR"),
 		RedisHost:     os.Getenv("REDIS_HOST"),
-		RedisPassword: os.Getenv("REDIS_PASSWORD"),
-	}
-}
-
-// loadEnvFile reads a key=value .env file and sets environment variables if not already defined.
-func loadEnvFile(path string) {
-	file, err := os.Open(path)
-	if err != nil {
-		return
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) == 2 {
-			key := strings.TrimSpace(parts[0])
-			val := strings.TrimSpace(parts[1])
-			val = strings.Trim(val, `"'`)
-			if os.Getenv(key) == "" {
-				_ = os.Setenv(key, val)
-			}
-		}
+		RedisPassword: redisPassword,
 	}
 }

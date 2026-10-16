@@ -12,20 +12,20 @@ import (
 func main() {
 	cfg := config.Load()
 
-	// Connect to Redis (OpenServer, Docker, or local instance)
+	// Подключение к Redis (OpenServer, Docker, локально)
 	if _, err := storage.Init(cfg); err != nil {
-		fmt.Println("Redis warning:", err)
+		fmt.Println("Предупреждение по Redis:", err)
 	}
 
 	b, err := bot.New(cfg)
 	if err != nil {
-		fmt.Println("Bot initialization error:", err)
+		fmt.Println("Ошибка инициализации бота:", err)
 		os.Exit(1)
 	}
 
-	fmt.Println("🚀 Music bot successfully started!")
+	fmt.Println("🚀 Музыкальный бот успешно запущен!")
 	if err := b.Start(); err != nil {
-		fmt.Println("Bot execution error:", err)
+		fmt.Println("Ошибка работы бота:", err)
 		os.Exit(1)
 	}
 }

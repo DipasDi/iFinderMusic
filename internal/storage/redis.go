@@ -19,7 +19,7 @@ var (
 	RDB *redis.Client
 )
 
-// Init scans candidate addresses via quick TCP probe and connects to the first reachable Redis instance.
+// Init выполняет перебор адресов, быстрое TCP-сканирование и подключение к доступному Redis
 func Init(cfg *config.Config) (*redis.Client, error) {
 	candidates := []string{}
 	if cfg.RedisAddr != "" {
@@ -31,11 +31,11 @@ func Init(cfg *config.Config) (*redis.Client, error) {
 
 	passwords := []string{cfg.RedisPassword}
 	if cfg.RedisPassword != "" {
-		passwords = append(passwords, "") // Try with password first, then without
+		passwords = append(passwords, "") // Пробуем с паролем, затем без
 	}
 
 	for _, addr := range candidates {
-		// Quick TCP probe to check if the port is reachable before creating connection pool
+		// Быстрый tcp-пробив порта перед созданием пула соединений
 		conn, netErr := net.DialTimeout("tcp", addr, 200*time.Millisecond)
 		if netErr != nil {
 			continue
@@ -59,35 +59,35 @@ func Init(cfg *config.Config) (*redis.Client, error) {
 
 			if err == nil {
 				RDB = client
-				log.Printf("✅ Successfully connected to Redis (%s): %s\n", addr, pong)
+				log.Printf("✅ Успешное подключение к Redis (%s): %s\n", addr, pong)
 				return RDB, nil
 			}
 			_ = client.Close()
 		}
 	}
 
-	return nil, fmt.Errorf("failed to connect to any available Redis address: %v", candidates)
+	return nil, fmt.Errorf("не удалось подключиться ни к одному из доступных адресов Redis: %v", candidates)
 }
 
-// SaveUserTracks caches the user's searched tracks list in Redis for 3 hours.
+// SaveUserTracks сохраняет список найденных треков пользователя в Redis на 3 часа
 func SaveUserTracks(chatID int64, tracks []model.Music) error {
 	if RDB == nil {
-		return fmt.Errorf("redis client is not initialized")
+		return fmt.Errorf("клиент Redis не инициализирован")
 	}
 
 	data, err := json.Marshal(tracks)
 	if err != nil {
-		return fmt.Errorf("failed to serialize tracks: %w", err)
+		return fmt.Errorf("ошибка сериализации треков: %w", err)
 	}
 
 	key := fmt.Sprintf("user_music:%d", chatID)
 	return RDB.Set(Ctx, key, data, 3*time.Hour).Err()
 }
 
-// GetUserTracks retrieves the cached tracks list for a user from Redis.
+// GetUserTracks получает сохраненный список треков пользователя из Redis
 func GetUserTracks(chatID int64) ([]model.Music, error) {
 	if RDB == nil {
-		return nil, fmt.Errorf("redis client is not initialized")
+		return nil, fmt.Errorf("клиент Redis не инициализирован")
 	}
 
 	key := fmt.Sprintf("user_music:%d", chatID)
@@ -98,13 +98,13 @@ func GetUserTracks(chatID int64) ([]model.Music, error) {
 
 	var tracks []model.Music
 	if err := json.Unmarshal(data, &tracks); err != nil {
-		return nil, fmt.Errorf("failed to deserialize tracks: %w", err)
+		return nil, fmt.Errorf("ошибка десериализации треков: %w", err)
 	}
 
 	return tracks, nil
 }
 
-// SaveUserQuery saves the user's latest search query in Redis for 3 hours.
+// SaveUserQuery сохраняет последний поисковый запрос пользователя в Redis на 3 часа
 func SaveUserQuery(chatID int64, query string) error {
 	if RDB == nil {
 		return nil
@@ -113,7 +113,7 @@ func SaveUserQuery(chatID int64, query string) error {
 	return RDB.Set(Ctx, key, query, 3*time.Hour).Err()
 }
 
-// GetUserQuery retrieves the user's latest search query from Redis.
+// GetUserQuery получает последний поисковый запрос пользователя из Redis
 func GetUserQuery(chatID int64) string {
 	if RDB == nil {
 		return ""
@@ -126,7 +126,7 @@ func GetUserQuery(chatID int64) string {
 	return val
 }
 
-// SaveUserListMessageID saves the message ID containing the track list for future cleanup.
+// SaveUserListMessageID сохраняет ID сообщения со списком треков для очистки
 func SaveUserListMessageID(chatID int64, messageID int) error {
 	if RDB == nil {
 		return nil
@@ -135,7 +135,7 @@ func SaveUserListMessageID(chatID int64, messageID int) error {
 	return RDB.Set(Ctx, key, messageID, 24*time.Hour).Err()
 }
 
-// GetUserListMessageID retrieves the saved track list message ID.
+// GetUserListMessageID получает сохраненный ID сообщения со списком треков
 func GetUserListMessageID(chatID int64) int {
 	if RDB == nil {
 		return 0
