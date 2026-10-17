@@ -1,6 +1,5 @@
 package model
 
-// Music представляет музыкальный трек
 type Music struct {
 	Title        string `json:"title"`
 	Author       string `json:"author"`

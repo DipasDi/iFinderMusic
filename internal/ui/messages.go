@@ -6,7 +6,6 @@ import (
 	"random/internal/model"
 )
 
-// WelcomeMessage возвращает приветственное сообщение для команды /start
 func WelcomeMessage() string {
 	return "👋 *Добро пожаловать\\!*\n\n" +
 		"Я — твой бот для быстрого поиска и скачивания музыки 🎧\n\n" +
@@ -20,7 +19,6 @@ func WelcomeMessage() string {
 		"Либо воспользуйся быстрыми кнопками ниже 👇"
 }
 
-// HelpMessage возвращает руководство по боту
 func HelpMessage() string {
 	return "📖 *Справка по использованию бота*\n\n" +
 		"🎧 *Поиск треков:*\n" +
@@ -33,12 +31,10 @@ func HelpMessage() string {
 		"⚠️ _Если трек не скачивается, возможно, истёк срок временной сессии — просто повтори поиск\\._"
 }
 
-// SearchingMessage возвращает уведомление об активном поиске
 func SearchingMessage(query string) string {
 	return fmt.Sprintf("🔎 *Ищу треки по запросу:* `%s`\n\n_Пожалуйста, подождите немного\\.\\.\\._ ⏳", EscapeCode(query))
 }
 
-// NotFoundMessage возвращает сообщение, когда ничего не найдено
 func NotFoundMessage(query string) string {
 	return fmt.Sprintf("🔍 *Поиск по запросу:* `%s`\n\n"+
 		"😔 *К сожалению, ничего не найдено\\!*\n\n"+
@@ -49,7 +45,6 @@ func NotFoundMessage(query string) string {
 		EscapeCode(query))
 }
 
-// SearchResultsMessage возвращает заголовок результатов поиска с информацией о пагинации
 func SearchResultsMessage(query string, count int, page int, totalPages int) string {
 	if totalPages <= 1 {
 		return fmt.Sprintf("🎵 *Результаты поиска:* `%s`\n\n"+
@@ -64,7 +59,6 @@ func SearchResultsMessage(query string, count int, page int, totalPages int) str
 		EscapeCode(query), count, page+1, totalPages)
 }
 
-// TrackLoadingMessage возвращает карточку загрузки трека
 func TrackLoadingMessage(track model.Music) string {
 	return fmt.Sprintf("⏳ *Загрузка трека\\.\\.\\.*\n\n"+
 		"🎵 *Песня:* `%s`\n"+
@@ -74,13 +68,11 @@ func TrackLoadingMessage(track model.Music) string {
 		EscapeCode(track.Title), EscapeCode(track.Author), EscapeCode(track.Duration))
 }
 
-// AudioCaption возвращает подпись к отправляемому MP3-файлу
 func AudioCaption(track model.Music) string {
 	return fmt.Sprintf("🎧 *%s* — *%s*\n⏱ _Длительность: %s_\n\n✨ _Приятного прослушивания\\! 🎵_",
 		EscapeMD(track.Author), EscapeMD(track.Title), EscapeMD(track.Duration))
 }
 
-// ErrorMessage возвращает стилизованное сообщение об ошибке
 func ErrorMessage(title, description string) string {
 	return fmt.Sprintf("⚠️ *%s*\n\n> %s", EscapeMD(title), EscapeMD(description))
 }

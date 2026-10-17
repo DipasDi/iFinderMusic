@@ -96,3 +96,178 @@ func TestButtonTrackText(t *testing.T) {
 		})
 	}
 }
+
+func TestMainMenuKeyboard(t *testing.T) {
+	kb := MainMenuKeyboard()
+	if kb == nil {
+		t.Fatal("MainMenuKeyboard() returned nil")
+	}
+
+	if !kb.ResizeKeyboard {
+		t.Errorf("expected ResizeKeyboard to be true, got false")
+	}
+
+	if len(kb.Keyboard) != 2 {
+		t.Fatalf("expected 2 rows in keyboard, got %d", len(kb.Keyboard))
+	}
+
+	// Row 0: "🔥 Популярные", "✨ Новинки"
+	if len(kb.Keyboard[0]) != 2 {
+		t.Fatalf("expected 2 buttons in row 0, got %d", len(kb.Keyboard[0]))
+	}
+	if kb.Keyboard[0][0].Text != "🔥 Популярные" {
+		t.Errorf("expected button 0,0 text '🔥 Популярные', got %q", kb.Keyboard[0][0].Text)
+	}
+	if kb.Keyboard[0][1].Text != "✨ Новинки" {
+		t.Errorf("expected button 0,1 text '✨ Новинки', got %q", kb.Keyboard[0][1].Text)
+	}
+
+	// Row 1: "❓ Помощь"
+	if len(kb.Keyboard[1]) != 1 {
+		t.Fatalf("expected 1 button in row 1, got %d", len(kb.Keyboard[1]))
+	}
+	if kb.Keyboard[1][0].Text != "❓ Помощь" {
+		t.Errorf("expected button 1,0 text '❓ Помощь', got %q", kb.Keyboard[1][0].Text)
+	}
+}
+
+func TestBuildTracksKeyboard(t *testing.T) {
+	generateTracks := func(count int) []model.Music {
+		tracks := make([]model.Music, count)
+		for i := 0; i < count; i++ {
+			tracks[i] = model.Music{
+				Title:    fmt.Sprintf("Track %d", i+1),
+				Author:   fmt.Sprintf("Artist %d", i+1),
+				Duration: "03:30",
+			}
+		}
+		return tracks
+	}
+
+	t.Run("empty tracks slice returns empty keyboard", func(t *testing.T) {
+		kb := BuildTracksKeyboard(nil, 0)
+		if kb == nil {
+			t.Fatal("expected non-nil keyboard")
+		}
+		if len(kb.InlineKeyboard) != 0 {
+			t.Errorf("expected 0 rows for empty tracks, got %d", len(kb.InlineKeyboard))
+		}
+	})
+
+	t.Run("single page of tracks has no pagination row", func(t *testing.T) {
+		tracks := generateTracks(5)
+		kb := BuildTracksKeyboard(tracks, 0)
+
+		// 5 tracks -> 5 rows, no pagination row because totalPages == 1
+		if len(kb.InlineKeyboard) != 5 {
+			t.Fatalf("expected 5 rows, got %d", len(kb.InlineKeyboard))
+		}
+
+		for i := 0; i < 5; i++ {
+			row := kb.InlineKeyboard[i]
+			if len(row) != 1 {
+				t.Fatalf("expected row %d to have 1 button, got %d", i, len(row))
+			}
+			expectedCallback := fmt.Sprintf("dl_%d", i)
+			if row[0].CallbackData != expectedCallback {
+				t.Errorf("expected callback %q, got %q", expectedCallback, row[0].CallbackData)
+			}
+		}
+	})
+
+	t.Run("first page of multi-page tracks has next button but no prev button", func(t *testing.T) {
+		tracks := generateTracks(25) // 25 tracks -> 3 pages (10 + 10 + 5)
+		kb := BuildTracksKeyboard(tracks, 0)
+
+		// 10 track rows + 1 pagination row = 11 rows
+		if len(kb.InlineKeyboard) != 11 {
+			t.Fatalf("expected 11 rows, got %d", len(kb.InlineKeyboard))
+		}
+
+		navRow := kb.InlineKeyboard[10]
+		// On page 0: only "📄 1/3" and "Вперёд ➡️" (2 buttons)
+		if len(navRow) != 2 {
+			t.Fatalf("expected 2 nav buttons on page 0, got %d", len(navRow))
+		}
+
+		if navRow[0].Text != "📄 1/3" || navRow[0].CallbackData != "noop_1" {
+			t.Errorf("nav button 0 mismatch: text=%q, callback=%q", navRow[0].Text, navRow[0].CallbackData)
+		}
+		if navRow[1].Text != "Вперёд ➡️" || navRow[1].CallbackData != "page_1" {
+			t.Errorf("nav button 1 mismatch: text=%q, callback=%q", navRow[1].Text, navRow[1].CallbackData)
+		}
+	})
+
+	t.Run("middle page has both prev and next buttons", func(t *testing.T) {
+		tracks := generateTracks(25)
+		kb := BuildTracksKeyboard(tracks, 1)
+
+		if len(kb.InlineKeyboard) != 11 {
+			t.Fatalf("expected 11 rows, got %d", len(kb.InlineKeyboard))
+		}
+
+		navRow := kb.InlineKeyboard[10]
+		// On page 1: "⬅️ Назад", "📄 2/3", "Вперёд ➡️" (3 buttons)
+		if len(navRow) != 3 {
+			t.Fatalf("expected 3 nav buttons on middle page, got %d", len(navRow))
+		}
+
+		if navRow[0].Text != "⬅️ Назад" || navRow[0].CallbackData != "page_0" {
+			t.Errorf("prev button mismatch: text=%q, callback=%q", navRow[0].Text, navRow[0].CallbackData)
+		}
+		if navRow[1].Text != "📄 2/3" || navRow[1].CallbackData != "noop_2" {
+			t.Errorf("counter button mismatch: text=%q, callback=%q", navRow[1].Text, navRow[1].CallbackData)
+		}
+		if navRow[2].Text != "Вперёд ➡️" || navRow[2].CallbackData != "page_2" {
+			t.Errorf("next button mismatch: text=%q, callback=%q", navRow[2].Text, navRow[2].CallbackData)
+		}
+
+		// First track on page 1 should have callback dl_10
+		if kb.InlineKeyboard[0][0].CallbackData != "dl_10" {
+			t.Errorf("expected first track on page 1 to have callback dl_10, got %q", kb.InlineKeyboard[0][0].CallbackData)
+		}
+	})
+
+	t.Run("last page has prev button but no next button", func(t *testing.T) {
+		tracks := generateTracks(25)
+		kb := BuildTracksKeyboard(tracks, 2)
+
+		// 5 tracks on last page + 1 pagination row = 6 rows
+		if len(kb.InlineKeyboard) != 6 {
+			t.Fatalf("expected 6 rows, got %d", len(kb.InlineKeyboard))
+		}
+
+		navRow := kb.InlineKeyboard[5]
+		// On last page: "⬅️ Назад" and "📄 3/3" (2 buttons)
+		if len(navRow) != 2 {
+			t.Fatalf("expected 2 nav buttons on last page, got %d", len(navRow))
+		}
+
+		if navRow[0].Text != "⬅️ Назад" || navRow[0].CallbackData != "page_1" {
+			t.Errorf("prev button mismatch: text=%q, callback=%q", navRow[0].Text, navRow[0].CallbackData)
+		}
+		if navRow[1].Text != "📄 3/3" || navRow[1].CallbackData != "noop_3" {
+			t.Errorf("counter button mismatch: text=%q, callback=%q", navRow[1].Text, navRow[1].CallbackData)
+		}
+	})
+
+	t.Run("clamps negative page index to 0", func(t *testing.T) {
+		tracks := generateTracks(25)
+		kb := BuildTracksKeyboard(tracks, -5)
+
+		navRow := kb.InlineKeyboard[10]
+		if navRow[0].Text != "📄 1/3" {
+			t.Errorf("expected page clamped to 0 ('📄 1/3'), got %q", navRow[0].Text)
+		}
+	})
+
+	t.Run("clamps oversized page index to totalPages-1", func(t *testing.T) {
+		tracks := generateTracks(25)
+		kb := BuildTracksKeyboard(tracks, 999)
+
+		navRow := kb.InlineKeyboard[5]
+		if navRow[1].Text != "📄 3/3" {
+			t.Errorf("expected page clamped to last page ('📄 3/3'), got %q", navRow[1].Text)
+		}
+	})
+}

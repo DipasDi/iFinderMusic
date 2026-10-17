@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -18,13 +19,11 @@ import (
 	tu "github.com/mymmrac/telego/telegoutil"
 )
 
-// Bot инкапсулирует клиента Telego и конфигурацию
 type Bot struct {
 	bot *telego.Bot
 	cfg *config.Config
 }
 
-// New создает новый экземпляр бота
 func New(cfg *config.Config) (*Bot, error) {
 	b, err := telego.NewBot(cfg.BotToken, telego.WithDefaultDebugLogger())
 	if err != nil {
@@ -33,7 +32,6 @@ func New(cfg *config.Config) (*Bot, error) {
 	return &Bot{bot: b, cfg: cfg}, nil
 }
 
-// Start запускает long polling обработчик обновлений
 func (b *Bot) Start() error {
 	updates, err := b.bot.UpdatesViaLongPolling(context.Background(), nil)
 	if err != nil {
@@ -55,11 +53,9 @@ func (b *Bot) Start() error {
 	return nil
 }
 
-// Отправка списка треков по категории
 func SendCategoryMusic(b *Bot, chatID telego.ChatID, music []model.Music, query string) {
-	// Кэшируем треки и запрос в Redis
 	if err := storage.SaveUserTracks(chatID.ID, music); err != nil {
-		fmt.Println("Ошибка сохранения треков в Redis:", err)
+		log.Printf("redis cache error: %v\n", err)
 	}
 	_ = storage.SaveUserQuery(chatID.ID, query)
 
@@ -67,13 +63,11 @@ func SendCategoryMusic(b *Bot, chatID telego.ChatID, music []model.Music, query 
 	inlineKeyboard := ui.BuildTracksKeyboard(music, 0)
 	listMsg, err := ui.SendMessageMD(b.bot, chatID, ui.SearchResultsMessage(query, len(music), 0, totalPages), inlineKeyboard)
 
-	// Запоминаем ID сообщения со списком треков для последующей очистки
 	if err == nil && listMsg != nil {
 		_ = storage.SaveUserListMessageID(chatID.ID, listMsg.MessageID)
 	}
 }
 
-// handleMessage обрабатывает текстовые сообщения от пользователей
 func (b *Bot) handleMessage(msg *telego.Message, menuKeyboard *telego.ReplyKeyboardMarkup) {
 	chatID := msg.Chat.ChatID()
 	text := strings.TrimSpace(msg.Text)
@@ -90,23 +84,17 @@ func (b *Bot) handleMessage(msg *telego.Message, menuKeyboard *telego.ReplyKeybo
 
 		switch text {
 		case "🔥 Популярные", "Популярные":
-			//Отправляем найденые треки из категории популярные
 			music := scraper.Search("", "https://ru.hitmoz.org/songs/top-today")
-
-			// Отправляем треки
 			SendCategoryMusic(b, chatID, music, text)
-
 			return
-		case "✨ Новинки", "Новинки":
-			//Отправляем найденые треки из категории новинки
-			music := scraper.Search("", "https://ru.hitmoz.org/songs/new")
 
-			// Отправляем треки
+		case "✨ Новинки", "Новинки":
+			music := scraper.Search("", "https://ru.hitmoz.org/songs/new")
 			SendCategoryMusic(b, chatID, music, text)
 			return
 		}
 
-		// Удаляем предыдущий список треков из чата, если он был сохранен в Redis
+		// delete previous search results to avoid chat clutter
 		oldMsgID := storage.GetUserListMessageID(chatID.ID)
 		if oldMsgID != 0 {
 			_ = b.bot.DeleteMessage(context.Background(), &telego.DeleteMessageParams{
@@ -115,19 +103,16 @@ func (b *Bot) handleMessage(msg *telego.Message, menuKeyboard *telego.ReplyKeybo
 			})
 		}
 
-		// Удаляем сообщение пользователя для чистоты чата
+		// delete the user prompt message for cleaner UI
 		_ = b.bot.DeleteMessage(context.Background(), &telego.DeleteMessageParams{
 			ChatID:    chatID,
 			MessageID: msg.MessageID,
 		})
 
-		// Отправляем уведомление о начале поиска
 		notifyMsg, _ := ui.SendMessageMD(b.bot, chatID, ui.SearchingMessage(text), nil)
 
-		// Выполняем поиск через парсер
 		music := scraper.Search(text, "")
 
-		// Удаляем временное уведомление о поиске
 		if notifyMsg != nil && notifyMsg.MessageID != 0 {
 			_ = b.bot.DeleteMessage(context.Background(), &telego.DeleteMessageParams{
 				ChatID:    chatID,
@@ -140,16 +125,14 @@ func (b *Bot) handleMessage(msg *telego.Message, menuKeyboard *telego.ReplyKeybo
 			return
 		}
 
-		// Отправляем треки
 		SendCategoryMusic(b, chatID, music, text)
 	}
 }
 
-// handleCallback обрабатывает нажатия инлайн-кнопок
 func (b *Bot) handleCallback(cq *telego.CallbackQuery) {
 	chatID := cq.Message.GetChat().ChatID()
 
-	// Клик по индикатору страницы (показывает подсказку)
+	// page indicator toast
 	if strings.HasPrefix(cq.Data, "noop") {
 		p := strings.TrimPrefix(cq.Data, "noop_")
 		toastText := "Текущая страница"
@@ -163,7 +146,7 @@ func (b *Bot) handleCallback(cq *telego.CallbackQuery) {
 		return
 	}
 
-	// Перелистывание страниц (пагинация)
+	// page switch
 	if strings.HasPrefix(cq.Data, "page_") {
 		_ = b.bot.AnswerCallbackQuery(context.Background(), &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: cq.ID,
@@ -197,12 +180,11 @@ func (b *Bot) handleCallback(cq *telego.CallbackQuery) {
 		return
 	}
 
-	// Ответ на нажатие кнопки скачивания трека
 	_ = b.bot.AnswerCallbackQuery(context.Background(), &telego.AnswerCallbackQueryParams{
 		CallbackQueryID: cq.ID,
 	})
 
-	// Скачивание трека
+	// track download
 	if strings.HasPrefix(cq.Data, "dl_") {
 		idx, err := strconv.Atoi(strings.TrimPrefix(cq.Data, "dl_"))
 		if err != nil {
@@ -218,7 +200,6 @@ func (b *Bot) handleCallback(cq *telego.CallbackQuery) {
 
 		track := tracks[idx]
 
-		// Уведомление о начале скачивания
 		loadingMsg, _ := ui.SendMessageMD(b.bot, chatID, ui.TrackLoadingMessage(track), nil)
 
 		loadingMsgID := 0
@@ -241,7 +222,6 @@ func (b *Bot) handleCallback(cq *telego.CallbackQuery) {
 	}
 }
 
-// sendTrackAudio скачивает трек и отправляет аудиофайл в Telegram
 func (b *Bot) sendTrackAudio(chatID telego.ChatID, track model.Music) error {
 	file, err := scraper.Download(track)
 	if err != nil {
@@ -259,7 +239,7 @@ func (b *Bot) sendTrackAudio(chatID telego.ChatID, track model.Music) error {
 
 	_, err = b.bot.SendAudio(context.Background(), audioParams)
 	if err != nil {
-		// Fallback: при ошибке парсинга разметки отправляем обычный текст
+		// fallback to plain caption if telegram markdown fails
 		_, _ = file.Seek(0, io.SeekStart)
 		plainCaption := fmt.Sprintf("🎧 %s — %s (%s)", track.Author, track.Title, track.Duration)
 		fallbackParams := tu.Audio(chatID, tu.File(file)).

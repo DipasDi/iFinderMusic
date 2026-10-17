@@ -10,7 +10,6 @@ import (
 
 const TracksPerPage = 10
 
-// MainMenuKeyboard возвращает постоянное меню внизу чата
 func MainMenuKeyboard() *telego.ReplyKeyboardMarkup {
 	return tu.Keyboard(
 		tu.KeyboardRow(
@@ -23,7 +22,7 @@ func MainMenuKeyboard() *telego.ReplyKeyboardMarkup {
 	).WithResizeKeyboard()
 }
 
-// ButtonTrackText форматирует текст для инлайн-кнопки трека
+// ButtonTrackText formats artist, title and duration for inline buttons (max 60 runes)
 func ButtonTrackText(m model.Music) string {
 	text := fmt.Sprintf("%s — %s [%s]", m.Author, m.Title, m.Duration)
 	runes := []rune(text)
@@ -33,7 +32,6 @@ func ButtonTrackText(m model.Music) string {
 	return text
 }
 
-// BuildTracksKeyboard формирует инлайн-клавиатуру со списком треков и кнопками перелистывания страниц (пагинации)
 func BuildTracksKeyboard(music []model.Music, page int) *telego.InlineKeyboardMarkup {
 	totalTracks := len(music)
 	if totalTracks == 0 {
@@ -55,17 +53,15 @@ func BuildTracksKeyboard(music []model.Music, page int) *telego.InlineKeyboardMa
 	}
 
 	var rows [][]telego.InlineKeyboardButton
-	// Треки для выбранной страницы
 	for i := start; i < end; i++ {
 		m := music[i]
 		buttonText := ButtonTrackText(m)
-		// В callback_data передаем глобальный индекс трека для скачивания
+		// pass global track index in callback data for download
 		rows = append(rows, tu.InlineKeyboardRow(
 			tu.InlineKeyboardButton(buttonText).WithCallbackData(fmt.Sprintf("dl_%d", i)),
 		))
 	}
 
-	// Строка переключения страниц
 	if totalPages > 1 {
 		var navRow []telego.InlineKeyboardButton
 
