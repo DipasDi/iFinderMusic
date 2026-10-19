@@ -4,21 +4,15 @@ import (
 	"testing"
 )
 
-<<<<<<< HEAD
 // TestLoad_Defaults verifies that default configuration values are populated when environment variables are omitted.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestLoad_Defaults(t *testing.T) {
 	t.Setenv("BOT_TOKEN", "")
 	t.Setenv("REDIS_PASSWORD", "")
 	t.Setenv("REDIS_ADDR", "")
 	t.Setenv("REDIS_HOST", "")
-<<<<<<< HEAD
 	t.Setenv("REDIS_USER", "")
 	t.Setenv("REDIS_USERNAME", "")
 	t.Setenv("USERS_FILE_PATH", "")
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 
 	cfg := Load()
 	if cfg == nil {
@@ -37,7 +31,6 @@ func TestLoad_Defaults(t *testing.T) {
 	if cfg.RedisPassword != DefaultRedisPassword {
 		t.Errorf("got %q, want %q", cfg.RedisPassword, DefaultRedisPassword)
 	}
-<<<<<<< HEAD
 	if cfg.RedisUser != DefaultRedisUser {
 		t.Errorf("got %q, want %q", cfg.RedisUser, DefaultRedisUser)
 	}
@@ -50,21 +43,14 @@ func TestLoad_Defaults(t *testing.T) {
 }
 
 // TestLoad_CustomEnv tests parsing custom configuration values set in the environment.
-=======
-}
-
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestLoad_CustomEnv(t *testing.T) {
 	t.Setenv("BOT_TOKEN", "123456:TEST_TOKEN")
 	t.Setenv("REDIS_ADDR", "custom-redis:6379")
 	t.Setenv("REDIS_HOST", "custom-host")
 	t.Setenv("REDIS_PASSWORD", "super_secret_password")
-<<<<<<< HEAD
 	t.Setenv("REDIS_USER", "custom_user")
 	t.Setenv("USERS_FILE_PATH", "custom/path/users.json")
 	t.Setenv("TRACK_USERS", "true")
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 
 	cfg := Load()
 	if cfg == nil {
@@ -83,7 +69,6 @@ func TestLoad_CustomEnv(t *testing.T) {
 	if cfg.RedisPassword != "super_secret_password" {
 		t.Errorf("got %q, want 'super_secret_password'", cfg.RedisPassword)
 	}
-<<<<<<< HEAD
 	if cfg.RedisUser != "custom_user" {
 		t.Errorf("got %q, want 'custom_user'", cfg.RedisUser)
 	}
@@ -128,6 +113,4 @@ func TestLoad_RedisUsernameFallback(t *testing.T) {
 	if cfg.RedisUser != "acl_username" {
 		t.Errorf("got %q, want 'acl_username'", cfg.RedisUser)
 	}
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 }

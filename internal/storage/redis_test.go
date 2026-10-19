@@ -8,10 +8,7 @@ import (
 	"random/internal/model"
 )
 
-<<<<<<< HEAD
 // TestInit_ConnectionFailure verifies that Init returns an error when connecting to an unreachable host/port.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestInit_ConnectionFailure(t *testing.T) {
 	oldRDB := RDB
 	defer func() {
@@ -31,10 +28,7 @@ func TestInit_ConnectionFailure(t *testing.T) {
 	}
 }
 
-<<<<<<< HEAD
 // TestStorage_UninitializedClient verifies safe error handling when the Redis client is uninitialized (nil).
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestStorage_UninitializedClient(t *testing.T) {
 	oldRDB := RDB
 	RDB = nil
@@ -97,10 +91,7 @@ func TestStorage_UninitializedClient(t *testing.T) {
 	})
 }
 
-<<<<<<< HEAD
 // TestTracksSerializationRoundTrip tests JSON marshaling and unmarshaling of Music track slices.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestTracksSerializationRoundTrip(t *testing.T) {
 	original := []model.Music{
 		{

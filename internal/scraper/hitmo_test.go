@@ -1,6 +1,7 @@
 package scraper
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -10,12 +11,9 @@ import (
 	"random/internal/model"
 )
 
-<<<<<<< HEAD
 // TestDownload_Success verifies successful audio download from a mock HTTP server.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestDownload_Success(t *testing.T) {
-	fakeAudioBytes := []byte("ID3_FAKE_MP3_STREAM_CONTENT_123456789")
+	fakeAudioBytes := []byte("FAKE_MP3_STREAM_CONTENT_123456789")
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Referer") != "https://ru.hitmoz.org/" {
@@ -38,7 +36,7 @@ func TestDownload_Success(t *testing.T) {
 		DownloadLink: server.URL + "/track.mp3",
 	}
 
-	tempFile, err := Download(track)
+	tempFile, _, err := Download(track)
 	if err != nil {
 		t.Fatalf("Download failed: %v", err)
 	}
@@ -52,15 +50,12 @@ func TestDownload_Success(t *testing.T) {
 		t.Fatalf("read failed: %v", err)
 	}
 
-	if string(data) != string(fakeAudioBytes) {
-		t.Errorf("got %q, want %q", string(data), string(fakeAudioBytes))
+	if !bytes.Contains(data, fakeAudioBytes) {
+		t.Errorf("expected data to contain fake audio bytes, got %q", string(data))
 	}
 }
 
-<<<<<<< HEAD
 // TestDownload_HttpErrors verifies proper error handling for 404 and 500 HTTP responses.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestDownload_HttpErrors(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/notfound" {
@@ -75,8 +70,7 @@ func TestDownload_HttpErrors(t *testing.T) {
 		track := model.Music{
 			DownloadLink: server.URL + "/notfound",
 		}
-
-		file, err := Download(track)
+		file, _, err := Download(track)
 		if err == nil {
 			if file != nil {
 				_ = file.Close()
@@ -90,8 +84,7 @@ func TestDownload_HttpErrors(t *testing.T) {
 		track := model.Music{
 			DownloadLink: server.URL + "/error",
 		}
-
-		file, err := Download(track)
+		file, _, err := Download(track)
 		if err == nil {
 			if file != nil {
 				_ = file.Close()
@@ -102,16 +95,13 @@ func TestDownload_HttpErrors(t *testing.T) {
 	})
 }
 
-<<<<<<< HEAD
 // TestDownload_InvalidUrl verifies that attempting to download with an invalid URL fails gracefully.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestDownload_InvalidUrl(t *testing.T) {
 	track := model.Music{
 		DownloadLink: "http://invalid-url\x7f/file.mp3",
 	}
 
-	file, err := Download(track)
+	file, _, err := Download(track)
 	if err == nil {
 		if file != nil {
 			_ = file.Close()

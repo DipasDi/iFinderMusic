@@ -4,10 +4,7 @@ import (
 	"testing"
 )
 
-<<<<<<< HEAD
 // TestEscapeMD tests escaping Telegram MarkdownV2 special characters.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestEscapeMD(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -71,10 +68,7 @@ func TestEscapeMD(t *testing.T) {
 	}
 }
 
-<<<<<<< HEAD
 // TestEscapeCode tests escaping characters inside inline code formatting.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestEscapeCode(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -123,10 +117,7 @@ func TestEscapeCode(t *testing.T) {
 	}
 }
 
-<<<<<<< HEAD
 // TestCleanMarkdownForFallback tests stripping Markdown escape characters for plain text fallback.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestCleanMarkdownForFallback(t *testing.T) {
 	tests := []struct {
 		name     string

@@ -2,6 +2,8 @@ package ui
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
 
 	"random/internal/model"
 
@@ -11,10 +13,7 @@ import (
 
 const TracksPerPage = 10
 
-<<<<<<< HEAD
 // MainMenuKeyboard creates the persistent bottom reply keyboard with quick actions.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func MainMenuKeyboard() *telego.ReplyKeyboardMarkup {
 	return tu.Keyboard(
 		tu.KeyboardRow(
@@ -27,11 +26,7 @@ func MainMenuKeyboard() *telego.ReplyKeyboardMarkup {
 	).WithResizeKeyboard()
 }
 
-<<<<<<< HEAD
 // ButtonTrackText formats artist, title and duration for inline buttons (max 60 runes).
-=======
-// ButtonTrackText formats artist, title and duration for inline buttons (max 60 runes)
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func ButtonTrackText(m model.Music) string {
 	text := fmt.Sprintf("%s — %s [%s]", m.Author, m.Title, m.Duration)
 	runes := []rune(text)
@@ -41,10 +36,7 @@ func ButtonTrackText(m model.Music) string {
 	return text
 }
 
-<<<<<<< HEAD
 // BuildTracksKeyboard generates an inline keyboard with paginated track selection buttons and navigation.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func BuildTracksKeyboard(music []model.Music, page int) *telego.InlineKeyboardMarkup {
 	totalTracks := len(music)
 	if totalTracks == 0 {
@@ -69,10 +61,7 @@ func BuildTracksKeyboard(music []model.Music, page int) *telego.InlineKeyboardMa
 	for i := start; i < end; i++ {
 		m := music[i]
 		buttonText := ButtonTrackText(m)
-<<<<<<< HEAD
-=======
 		// pass global track index in callback data for download
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 		rows = append(rows, tu.InlineKeyboardRow(
 			tu.InlineKeyboardButton(buttonText).WithCallbackData(fmt.Sprintf("dl_%d", i)),
 		))
@@ -95,4 +84,18 @@ func BuildTracksKeyboard(music []model.Music, page int) *telego.InlineKeyboardMa
 	}
 
 	return tu.InlineKeyboard(rows...)
+}
+
+// YandexMusicKeyboard creates an inline button opening Yandex Music search for the track.
+func YandexMusicKeyboard(author, title string) *telego.InlineKeyboardMarkup {
+	query := strings.TrimSpace(author + " " + title)
+	if query == "" {
+		return nil
+	}
+	searchURL := "https://music.yandex.ru/search?text=" + url.QueryEscape(query)
+	return tu.InlineKeyboard(
+		tu.InlineKeyboardRow(
+			tu.InlineKeyboardButton("🎧 Яндекс Музыка").WithURL(searchURL),
+		),
+	)
 }

@@ -17,10 +17,7 @@ var (
 	RDB *redis.Client
 )
 
-<<<<<<< HEAD
 // Init initializes and verifies the connection to the Redis client using the provided configuration.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func Init(cfg *config.Config) (*redis.Client, error) {
 	addr := cfg.RedisAddr
 	if addr == "" && cfg.RedisHost != "" {
@@ -32,10 +29,7 @@ func Init(cfg *config.Config) (*redis.Client, error) {
 
 	client := redis.NewClient(&redis.Options{
 		Addr:         addr,
-<<<<<<< HEAD
 		Username:     cfg.RedisUser,
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 		Password:     cfg.RedisPassword,
 		DB:           0,
 		DialTimeout:  2 * time.Second,
@@ -55,10 +49,7 @@ func Init(cfg *config.Config) (*redis.Client, error) {
 	return RDB, nil
 }
 
-<<<<<<< HEAD
 // SaveUserTracks serializes and stores the user's searched tracks list in Redis with a 3-hour TTL.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func SaveUserTracks(chatID int64, tracks []model.Music) error {
 	if RDB == nil {
 		return fmt.Errorf("redis client is not initialized")
@@ -73,10 +64,7 @@ func SaveUserTracks(chatID int64, tracks []model.Music) error {
 	return RDB.Set(Ctx, key, data, 3*time.Hour).Err()
 }
 
-<<<<<<< HEAD
 // GetUserTracks retrieves and deserializes the user's cached tracks list from Redis.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func GetUserTracks(chatID int64) ([]model.Music, error) {
 	if RDB == nil {
 		return nil, fmt.Errorf("redis client is not initialized")
@@ -96,10 +84,7 @@ func GetUserTracks(chatID int64) ([]model.Music, error) {
 	return tracks, nil
 }
 
-<<<<<<< HEAD
 // SaveUserQuery stores the latest search query string for the given chat ID with a 3-hour TTL.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func SaveUserQuery(chatID int64, query string) error {
 	if RDB == nil {
 		return nil
@@ -108,10 +93,7 @@ func SaveUserQuery(chatID int64, query string) error {
 	return RDB.Set(Ctx, key, query, 3*time.Hour).Err()
 }
 
-<<<<<<< HEAD
 // GetUserQuery retrieves the latest search query string for the given chat ID.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func GetUserQuery(chatID int64) string {
 	if RDB == nil {
 		return ""
@@ -124,10 +106,7 @@ func GetUserQuery(chatID int64) string {
 	return val
 }
 
-<<<<<<< HEAD
 // SaveUserListMessageID stores the Telegram message ID of the active track list for future UI updates.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func SaveUserListMessageID(chatID int64, messageID int) error {
 	if RDB == nil {
 		return nil
@@ -136,10 +115,7 @@ func SaveUserListMessageID(chatID int64, messageID int) error {
 	return RDB.Set(Ctx, key, messageID, 24*time.Hour).Err()
 }
 
-<<<<<<< HEAD
 // GetUserListMessageID returns the Telegram message ID of the active track list for the given chat ID.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func GetUserListMessageID(chatID int64) int {
 	if RDB == nil {
 		return 0

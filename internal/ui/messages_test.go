@@ -7,10 +7,7 @@ import (
 	"random/internal/model"
 )
 
-<<<<<<< HEAD
 // TestWelcomeMessage tests the generated welcome greeting message text.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestWelcomeMessage(t *testing.T) {
 	msg := WelcomeMessage()
 	if msg == "" {
@@ -21,10 +18,7 @@ func TestWelcomeMessage(t *testing.T) {
 	}
 }
 
-<<<<<<< HEAD
 // TestHelpMessage tests the generated help guide message text.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestHelpMessage(t *testing.T) {
 	msg := HelpMessage()
 	if msg == "" {
@@ -35,10 +29,7 @@ func TestHelpMessage(t *testing.T) {
 	}
 }
 
-<<<<<<< HEAD
 // TestSearchingMessage tests the searching progress message formatting.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestSearchingMessage(t *testing.T) {
 	t.Run("escapes query with backticks", func(t *testing.T) {
 		query := "`Special` Song"
@@ -51,10 +42,7 @@ func TestSearchingMessage(t *testing.T) {
 	})
 }
 
-<<<<<<< HEAD
 // TestNotFoundMessage tests the message returned when no tracks are found.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestNotFoundMessage(t *testing.T) {
 	query := "NonExistingSong `xyz`"
 	msg := NotFoundMessage(query)
@@ -67,10 +55,7 @@ func TestNotFoundMessage(t *testing.T) {
 	}
 }
 
-<<<<<<< HEAD
 // TestSearchResultsMessage tests search summary header and pagination indicators.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestSearchResultsMessage(t *testing.T) {
 	t.Run("single page or zero pages omits page indicator", func(t *testing.T) {
 		msg := SearchResultsMessage("Rock", 5, 0, 1)
@@ -99,10 +84,7 @@ func TestSearchResultsMessage(t *testing.T) {
 	})
 }
 
-<<<<<<< HEAD
 // TestTrackLoadingMessage tests the download status indicator message.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestTrackLoadingMessage(t *testing.T) {
 	track := model.Music{
 		Title:    "Track `One`",
@@ -123,31 +105,7 @@ func TestTrackLoadingMessage(t *testing.T) {
 	}
 }
 
-<<<<<<< HEAD
-// TestAudioCaption tests the caption applied to uploaded audio files.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
-func TestAudioCaption(t *testing.T) {
-	track := model.Music{
-		Title:    "Song (Live at Wembley)",
-		Author:   "Queen & Friends",
-		Duration: "04:15",
-	}
-
-	caption := AudioCaption(track)
-
-	if !strings.Contains(caption, `\(Live at Wembley\)`) {
-		t.Errorf("expected escaped parentheses in caption, got: %s", caption)
-	}
-	if !strings.Contains(caption, "Queen & Friends") {
-		t.Errorf("expected author in caption, got: %s", caption)
-	}
-}
-
-<<<<<<< HEAD
 // TestErrorMessage tests formatting for error notifications.
-=======
->>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestErrorMessage(t *testing.T) {
 	title := "Error: Not Found!"
 	desc := "Could not fetch track [id=123]."
