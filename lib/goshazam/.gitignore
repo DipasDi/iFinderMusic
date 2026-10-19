@@ -1,0 +1,23 @@
+# ShazamIO submodule / reference
+/ShazamIO
+
+# Binaries
+bin/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test artifacts & coverage
+*.test
+*.out
+coverage.txt
+.tmp/
+.workspaces/
+
+# IDE / OS
+.codegraph
+.DS_Store
+.vscode/
+.idea/

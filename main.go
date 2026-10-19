@@ -9,23 +9,23 @@ import (
 	"random/internal/storage"
 )
 
+// main initializes configuration, storage, and starts the Telegram bot service.
 func main() {
 	cfg := config.Load()
 
-	// Connect to Redis (OpenServer, Docker, or local instance)
 	if _, err := storage.Init(cfg); err != nil {
-		fmt.Println("Redis warning:", err)
+		fmt.Println("redis init warning:", err)
 	}
 
 	b, err := bot.New(cfg)
 	if err != nil {
-		fmt.Println("Bot initialization error:", err)
+		fmt.Println("bot init error:", err)
 		os.Exit(1)
 	}
 
-	fmt.Println("🚀 Music bot successfully started!")
+	fmt.Println("🚀 Music bot started")
 	if err := b.Start(); err != nil {
-		fmt.Println("Bot execution error:", err)
+		fmt.Println("bot runtime error:", err)
 		os.Exit(1)
 	}
 }

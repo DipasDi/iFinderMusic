@@ -6,7 +6,7 @@ import (
 	"random/internal/model"
 )
 
-// WelcomeMessage returns the welcome greeting for the /start command.
+// WelcomeMessage returns the MarkdownV2 welcome text for the /start command.
 func WelcomeMessage() string {
 	return "👋 *Добро пожаловать\\!*\n\n" +
 		"Я — твой бот для быстрого поиска и скачивания музыки 🎧\n\n" +
@@ -20,7 +20,7 @@ func WelcomeMessage() string {
 		"Либо воспользуйся быстрыми кнопками ниже 👇"
 }
 
-// HelpMessage returns user instructions and help guide.
+// HelpMessage returns the MarkdownV2 help guide for the /help command.
 func HelpMessage() string {
 	return "📖 *Справка по использованию бота*\n\n" +
 		"🎧 *Поиск треков:*\n" +
@@ -33,12 +33,12 @@ func HelpMessage() string {
 		"⚠️ _Если трек не скачивается, возможно, истёк срок временной сессии — просто повтори поиск\\._"
 }
 
-// SearchingMessage returns a notification indicating an active search in progress.
+// SearchingMessage returns a status text displayed while search is in progress.
 func SearchingMessage(query string) string {
 	return fmt.Sprintf("🔎 *Ищу треки по запросу:* `%s`\n\n_Пожалуйста, подождите немного\\.\\.\\._ ⏳", EscapeCode(query))
 }
 
-// NotFoundMessage returns a message when no tracks match the query.
+// NotFoundMessage returns the text shown when no tracks match the query.
 func NotFoundMessage(query string) string {
 	return fmt.Sprintf("🔍 *Поиск по запросу:* `%s`\n\n"+
 		"😔 *К сожалению, ничего не найдено\\!*\n\n"+
@@ -49,7 +49,7 @@ func NotFoundMessage(query string) string {
 		EscapeCode(query))
 }
 
-// SearchResultsMessage returns the search results header with pagination details.
+// SearchResultsMessage returns the header text for paginated track search results.
 func SearchResultsMessage(query string, count int, page int, totalPages int) string {
 	if totalPages <= 1 {
 		return fmt.Sprintf("🎵 *Результаты поиска:* `%s`\n\n"+
@@ -64,7 +64,7 @@ func SearchResultsMessage(query string, count int, page int, totalPages int) str
 		EscapeCode(query), count, page+1, totalPages)
 }
 
-// TrackLoadingMessage returns the download progress card for a track.
+// TrackLoadingMessage returns the status text shown when a track is being downloaded and prepared.
 func TrackLoadingMessage(track model.Music) string {
 	return fmt.Sprintf("⏳ *Загрузка трека\\.\\.\\.*\n\n"+
 		"🎵 *Песня:* `%s`\n"+
@@ -74,13 +74,13 @@ func TrackLoadingMessage(track model.Music) string {
 		EscapeCode(track.Title), EscapeCode(track.Author), EscapeCode(track.Duration))
 }
 
-// AudioCaption returns the caption attached to the uploaded MP3 audio file.
+// AudioCaption formats the caption attached to the downloaded audio file.
 func AudioCaption(track model.Music) string {
 	return fmt.Sprintf("🎧 *%s* — *%s*\n⏱ _Длительность: %s_\n\n✨ _Приятного прослушивания\\! 🎵_",
 		EscapeMD(track.Author), EscapeMD(track.Title), EscapeMD(track.Duration))
 }
 
-// ErrorMessage returns a formatted error notification message.
+// ErrorMessage formats an error alert card in MarkdownV2.
 func ErrorMessage(title, description string) string {
 	return fmt.Sprintf("⚠️ *%s*\n\n> %s", EscapeMD(title), EscapeMD(description))
 }

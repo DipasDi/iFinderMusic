@@ -2,227 +2,114 @@
 
 # 🎵 iFinderMusic Bot
 
-**Высокопроизводительный Telegram-бот на Go для быстрого поиска, прослушивания и скачивания музыки.**
+**Fast Go Telegram bot for searching, recognizing (Shazam), and downloading MP3 tracks.**
 
-[![Go Version](https://img.shields.io/badge/Go-1.22%2B-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://golang.org)
-[![Telego](https://img.shields.io/badge/Telegram_API-Telego-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://github.com/mymmrac/telego)
-[![Redis](https://img.shields.io/badge/Cache-Redis_7-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io)
-[![Docker](https://img.shields.io/badge/Deploy-Docker_Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
-
-<br/>
-
-[✨ Возможности](#-основные-возможности) •
-[🏗 Архитектура](#-архитектура) •
-[🚀 Быстрый старт](#-быстрый-старт) •
-[⚙️ Конфигурация](#️-конфигурация) •
-[📁 Структура](#-структура-проекта) •
-[🤖 Использование](#-использование)
+[![Go](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
+[![Telego](https://img.shields.io/badge/Telego-API-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://github.com/mymmrac/telego)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 
 </div>
 
 ---
 
-## 📖 О проекте
+## ✨ Features
 
-**iFinderMusic** — это современный, быстрый и удобный Telegram-бот, разработанный на языке **Go**. Бот позволяет пользователям находить любимые музыкальные композиции по названию или исполнителю, просматривать популярные треки и новинки, а также мгновенно скачивать треки в формате MP3 с тегами исполнителя и длительностью прямо в чат Telegram.
-
-### Почему iFinderMusic?
-* **Молниеносный отклик**: написан на компилируемом языке Go с минимальным потреблением ресурсов.
-* **Умное кэширование**: результаты поисковой выдачи кэшируются в **Redis**, что обеспечивает моментальное переключение между страницами без повторных веб-запросов.
-* **Идеальная чистота чата (Clean UX)**: бот автоматически удаляет текстовые запросы пользователя и промежуточные статусные уведомления, предотвращая загромождение диалога.
-* **Отказоустойчивость**: поддержка двухрежимного форматирования текста (MarkdownV2 с прозрачным fallback на plain-text) гарантирует корректную доставку каждого сообщения.
+- 🔎 **Music Search** — Find tracks by artist or title with duration tags and ID3 metadata.
+- 🎧 **Shazam Recognition** — Send a voice message, audio, video, or video note to identify the song and get the MP3.
+- 🔥 **Charts & New Releases** — Quick access to trending tracks (`🔥 Популярные`) and fresh releases (`✨ Новинки`).
+- ⚡️ **Redis Caching** — Instant inline pagination (`⬅️ Back` / `Next ➡️`) backed by Redis session caching.
+- 🧹 **Clean UX** — Auto-removes temporary status messages and supports MarkdownV2 with plaintext fallback.
 
 ---
 
-## ✨ Основные возможности
-
-- 🔎 **Быстрый поиск треков**  
-  Введите имя исполнителя или название песни (например, `The Weeknd`, `Miyagi`, `Queen`) — бот мгновенно вернет список подходящих композиций с указанием длительности.
-
-- 📑 **Интерактивная пагинация**  
-  Результаты поиска группируются по 10 треков на страницу. Перелистывание страниц (`⬅️ Назад` / `Вперёд ➡️`) происходит бесшовно через Inline-кнопки без мерцания интерфейса.
-
-- 🔥 **Быстрые категории в один клик**  
-  Удобное меню внизу чата для мгновенного доступа:
-  - `🔥 Популярные` — актуальные хиты и чарты;
-  - `✨ Новинки` — свежие музыкальные релизы;
-  - `❓ Помощь` — иллюстрированная справка по работе с ботом.
-
-- ⚡️ **Асинхронная загрузка и отправка аудио**  
-  Скачивание MP3-файла и отправка в Telegram производятся в неблокирующей горутине со статусным индикатором загрузки. Аудио отправляется с заполненными метатегами (Title, Performer, Duration).
-
-- 🗄 **Автономный парсер на базе Colly**  
-  Эффективный веб-скрапер на базе популярной Go-библиотеки [Colly](https://github.com/gocolly/colly) с поддержкой кастомных User-Agent и защитой от блокировок.
-
----
-
-## 🏗 Архитектура
+## 🏗 Architecture
 
 ```mermaid
-flowchart TD
-    User([👤 Пользователь]) -->|Запрос трека / Кнопка| TG[Telegram Bot API]
-    TG -->|Long Polling| Bot[🤖 Go Bot Service]
+flowchart LR
+    User([👤 User]) <-->|Messages / Audio| TG[Telegram API]
+    TG <-->|Long Polling| Bot[🤖 Go Bot]
 
-    subgraph Internal Architecture
-        Bot -->|Проверка / Запись сессии| Redis[(🗄 Redis Cache)]
-        Bot -->|Поисковый запрос| Scraper[🕷 Colly Scraper]
-        Scraper -->|Парсинг каталога| Hitmo[🌐 Music Source]
-        Bot -->|Загрузка потока MP3| Downloader[⬇️ Audio Downloader]
-        Downloader -->|Временный файл| TempStore[💾 Temp Storage]
+    subgraph Core Services
+        Bot <-->|Session Cache| Redis[(🗄 Redis)]
+        Bot -->|Voice / Video| Shazam[🎧 GoShazam]
+        Bot -->|Search Query| Scraper[🕷 Colly Scraper]
+        Scraper -->|Fetch & Stream| Source[🌐 Music Catalog]
     end
-
-    Downloader -->|Отправка MP3 с метатегами| TG
-    TG -->|Воспроизведение аудио| User
 ```
 
 ---
 
-## 🚀 Быстрый старт
+## 🚀 Quick Start
 
-### Вариант 1: Запуск через Docker Compose (Рекомендуется)
+### Docker Compose (Recommended)
 
-Самый простой способ поднять бота вместе с изолированным Redis без необходимости вручную настраивать базы данных и зависимости:
+```bash
+git clone [https://github.com/your-username/ifindermusic.git](https://github.com/your-username/ifindermusic.git)
+cd ifindermusic
+cp .env.example .env
+```
 
-1. **Клонируйте репозиторий:**
-   ```bash
-   git clone https://github.com/your-username/iFinderMusic.git
-   cd iFinderMusic
-   ```
+Set your `BOT_TOKEN` (from [@BotFather](https://t.me/BotFather)) inside `.env`, then run:
 
-2. **Создайте конфигурационный файл `.env`:**
-   ```bash
-   cp .env.example .env
-   ```
-   Откройте `.env` и укажите ваш токен бота:
-   ```env
-   BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ
-   ```
+```bash
+docker-compose up --build -d
+```
 
-3. **Запустите контейнеры:**
-   ```bash
-   docker compose up -d
-   ```
+### Local Run
 
-4. **Проверьте логи работы:**
-   ```bash
-   docker compose logs -f bot
-   ```
+Requires **Go 1.22+** and a running **Redis** instance.
+
+```bash
+cp .env.example .env
+go mod download
+go run main.go
+```
 
 ---
 
-### Вариант 2: Локальный запуск (Go)
+## ⚙️ Configuration
 
-#### Требования
-* **Go** версии `1.22` или новее
-* Запущенный сервер **Redis** (локально, через Docker или OpenServer)
-
-#### Инструкция
-
-1. **Клонируйте репозиторий:**
-   ```bash
-   git clone https://github.com/your-username/iFinderMusic.git
-   cd iFinderMusic
-   ```
-
-2. **Установите зависимости:**
-   ```bash
-   go mod download
-   ```
-
-3. **Настройте переменные окружения:**
-   Скопируйте пример файла конфигурации:
-   ```bash
-   cp .env.example .env
-   ```
-   Укажите ваш токен в файле `.env`:
-   ```env
-   BOT_TOKEN=your_telegram_bot_token_here
-   REDIS_ADDR=127.0.0.1:6379
-   REDIS_PASSWORD=
-   ```
-
-4. **Запустите проект:**
-   ```bash
-   go run .
-   ```
+| Variable          | Required |     Default      | Description                                  |
+| :---------------- | :------: | :--------------: | :------------------------------------------- |
+| `BOT_TOKEN`       | **Yes**  |        —         | Telegram Bot API token                       |
+| `REDIS_ADDR`      |    No    | `127.0.0.1:6379` | Redis address (`host:port`)                  |
+| `REDIS_USER`      |    No    |    `default`     | Redis ACL username                           |
+| `REDIS_PASSWORD`  |    No    |       `""`       | Redis password                               |
+| `TRACK_USERS`     |    No    |      `true`      | Log user activity to JSON (`true` / `false`) |
+| `USERS_FILE_PATH` |    No    |   `users.json`   | File path for user activity logs             |
 
 ---
 
-## ⚙️ Конфигурация
-
-Параметры считываются из системных переменных окружения или локального файла `.env`:
-
-| Переменная | Описание | Обязательная | По умолчанию |
-|---|---|:---:|---|
-| `BOT_TOKEN` | Токен Telegram-бота, полученный от [@BotFather](https://t.me/BotFather) | **Да** | — |
-| `REDIS_ADDR` | Сетевой адрес Redis в формате `host:port` | Нет | Автоматическое сканирование |
-| `REDIS_HOST` | Хост Redis (если не указан полный адрес `REDIS_ADDR`) | Нет | — |
-| `REDIS_PASSWORD`| Пароль для авторизации в Redis (AUTH) | Нет | Без пароля |
-
-> **Примечание:** если адрес Redis не задан явно, бот автоматически проверяет доступность локальных адресов (`127.0.0.1:6379`, `redis:6379`, `host.docker.internal:6379`).
-
----
-
-## 📁 Структура проекта
+## 📁 Project Structure
 
 ```text
-iFinderMusic/
 ├── internal/
-│   ├── bot/          # Логика бота, обработчики сообщений и callback-кнопок
-│   ├── config/       # Загрузка и парсинг конфигурации (.env и переменные окружения)
-│   ├── model/        # Модели данных (Music track entity)
-│   ├── scraper/      # Веб-парсер каталога треков и загрузчик аудиофайлов
-│   ├── storage/      # Взаимодействие с Redis (кэширование треков и состояний)
-│   └── ui/           # Разметка Telegram (инлайн-клавиатуры, меню, MarkdownV2)
-├── .env.example      # Шаблон файла конфигурации окружения
-├── .gitignore        # Список исключений для Git
-├── docker-compose.yml# Конфигурация для запуска в Docker Compose
-├── Dockerfile        # Мульти-стейдж сборка легковесного Docker-образа
-├── go.mod            # Определение Go-модуля и зависимостей
-├── go.sum            # Контрольные суммы зависимостей
-├── LICENSE           # Лицензия проекта (MIT)
-├── main.go           # Точка входа в приложение
-└── README.md         # Документация проекта
+│   ├── bot/          # Telegram handlers, polling loop, audio dispatcher
+│   ├── config/       # Environment configuration
+│   ├── model/        # Domain models
+│   ├── scraper/      # Colly web scraper & MP3 downloader
+│   ├── shazam/       # Audio recognition integration
+│   ├── storage/      # Redis cache & user tracking
+│   └── ui/           # Keyboards & message formatting
+├── lib/
+│   └── goshazam/     # Audio fingerprinting & Shazam library
+├── Dockerfile
+├── docker-compose.yml
+└── main.go
 ```
 
 ---
 
-## 🤖 Использование
+## 🧪 Testing
 
-1. Запустите диалог с ботом командой `/start`.
-2. Введите название интересующего трека или имя музыканта:
-   ```text
-   The Weeknd Blinding Lights
-   ```
-3. Бот вернет список подходящих аудиозаписей с постраничной навигацией:
-   ```text
-   🎵 Результаты поиска: The Weeknd Blinding Lights
-   Найдено треков: 15 (страница 1 из 2)
-   ```
-4. Нажмите на интерактивную кнопку с нужным треком — бот скачает и отправит аудиофайл в формате MP3 прямо в чат!
+```bash
+go test -v -cover ./...
+```
 
 ---
 
-## 🛠 Стек технологий
+## 📄 License
 
-* **Язык**: [Go (Golang)](https://go.dev/)
-* **Telegram Framework**: [Telego](https://github.com/mymmrac/telego)
-* **HTML Scraping**: [Colly v2](https://github.com/gocolly/colly) & [GoQuery](https://github.com/PuerkitoBio/goquery)
-* **Кэширование**: [Redis 7](https://redis.io/) & [go-redis](https://github.com/redis/go-redis)
-* **Контейнеризация**: [Docker](https://www.docker.com/) & [Docker Compose](https://docs.docker.com/compose/)
-
----
-
-## 📄 Лицензия
-
-Проект распространяется под свободной лицензией **MIT**. Подробности в файле [LICENSE](LICENSE).
-
----
-
-<div align="center">
-  <sub>Создано с ❤️ для любителей музыки. Если проект вам понравился, поставьте ⭐️ звездочку репозиторию!</sub>
-</div>
-#   i F i n d e r M u s i c  
- #   i F i n d e r M u s i c  
- 
+Distributed under the [MIT License](LICENSE).

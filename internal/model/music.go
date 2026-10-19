@@ -1,6 +1,6 @@
 package model
 
-// Music represents a music track with its metadata and download URL.
+// Music represents a track item with metadata and direct download link.
 type Music struct {
 	Title        string `json:"title"`
 	Author       string `json:"author"`

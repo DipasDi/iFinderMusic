@@ -4,13 +4,17 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"random/internal/config"
 	"random/internal/model"
 	"random/internal/scraper"
+	"random/internal/shazam"
 	"random/internal/storage"
 	"random/internal/ui"
 
@@ -18,26 +22,54 @@ import (
 	tu "github.com/mymmrac/telego/telegoutil"
 )
 
-// Bot encapsulates the Telego bot instance and application configuration.
 type Bot struct {
-	bot *telego.Bot
-	cfg *config.Config
+	bot       *telego.Bot
+	cfg       *config.Config
+	shazam    *shazam.ShazamClient
+	userStore *storage.UserStore
 }
 
-// New creates and initializes a new Bot instance.
+// New constructs and initializes a new Bot instance with the provided configuration.
 func New(cfg *config.Config) (*Bot, error) {
-	if cfg.BotToken == "" {
-		return nil, fmt.Errorf("bot token is empty: please set BOT_TOKEN in .env or environment")
-	}
-
 	b, err := telego.NewBot(cfg.BotToken, telego.WithDefaultDebugLogger())
 	if err != nil {
 		return nil, err
 	}
-	return &Bot{bot: b, cfg: cfg}, nil
+
+	var userStore *storage.UserStore
+	if cfg.TrackUsers {
+		var err error
+		userStore, err = storage.NewUserStore(cfg.UsersFilePath)
+		if err != nil {
+			log.Printf("warning: could not initialize user storage at %s: %v", cfg.UsersFilePath, err)
+		} else {
+			log.Printf("user storage initialized at %s", cfg.UsersFilePath)
+		}
+	} else {
+		log.Println("user tracking is disabled (TRACK_USERS=false)")
+	}
+
+	return &Bot{
+		bot:       b,
+		cfg:       cfg,
+		shazam:    shazam.NewClient(),
+		userStore: userStore,
+	}, nil
 }
 
-// Start begins listening for Telegram updates via long polling.
+// trackUser logs and persists the Telegram user info in the JSON store.
+func (b *Bot) trackUser(u *telego.User) {
+	if b == nil || b.cfg == nil || !b.cfg.TrackUsers || b.userStore == nil || u == nil {
+		return
+	}
+	if err := b.userStore.TrackUser(u.ID, u.Username, u.FirstName, u.LastName); err != nil {
+		log.Printf("user tracking error for %d (%s): %v", u.ID, u.Username, err)
+	} else {
+		log.Printf("user %d (%s) tracked successfully", u.ID, u.Username)
+	}
+}
+
+// Start launches the Telegram long-polling update listener loop.
 func (b *Bot) Start() error {
 	updates, err := b.bot.UpdatesViaLongPolling(context.Background(), nil)
 	if err != nil {
@@ -59,11 +91,10 @@ func (b *Bot) Start() error {
 	return nil
 }
 
-// SendCategoryMusic caches tracks and sends a paginated track list message to the chat.
+// SendCategoryMusic caches the track list in Redis and displays the first page with inline navigation buttons.
 func SendCategoryMusic(b *Bot, chatID telego.ChatID, music []model.Music, query string) {
-	// Cache tracks and search query in Redis
 	if err := storage.SaveUserTracks(chatID.ID, music); err != nil {
-		fmt.Println("Failed to cache tracks in Redis:", err)
+		log.Printf("redis cache error: %v\n", err)
 	}
 	_ = storage.SaveUserQuery(chatID.ID, query)
 
@@ -71,84 +102,254 @@ func SendCategoryMusic(b *Bot, chatID telego.ChatID, music []model.Music, query 
 	inlineKeyboard := ui.BuildTracksKeyboard(music, 0)
 	listMsg, err := ui.SendMessageMD(b.bot, chatID, ui.SearchResultsMessage(query, len(music), 0, totalPages), inlineKeyboard)
 
-	// Save track list message ID for subsequent chat cleanup
 	if err == nil && listMsg != nil {
 		_ = storage.SaveUserListMessageID(chatID.ID, listMsg.MessageID)
 	}
 }
 
-// handleMessage processes incoming text messages from users.
+// handleMessage processes incoming text commands, search queries, and media messages.
 func (b *Bot) handleMessage(msg *telego.Message, menuKeyboard *telego.ReplyKeyboardMarkup) {
+	if msg.From != nil {
+		b.trackUser(msg.From)
+	}
 	chatID := msg.Chat.ChatID()
 	text := strings.TrimSpace(msg.Text)
 
-	switch text {
-	case "/start":
-		_, _ = ui.SendMessageMD(b.bot, chatID, ui.WelcomeMessage(), menuKeyboard)
-	case "/help", "❓ Помощь":
-		_, _ = ui.SendMessageMD(b.bot, chatID, ui.HelpMessage(), nil)
-	default:
-		if text == "" {
-			return
-		}
+	var fileID string
+	var InfoMessage *telego.Message
+	var TextTypeAudioFile string
 
+	switch {
+	case text != "":
 		switch text {
-		case "🔥 Популярные", "Популярные":
-			// Fetch and send popular tracks
-			music := scraper.Search("", "https://ru.hitmoz.org/songs/top-today")
-			SendCategoryMusic(b, chatID, music, text)
-			return
-		case "✨ Новинки", "Новинки":
-			// Fetch and send new releases
-			music := scraper.Search("", "https://ru.hitmoz.org/songs/new")
-			SendCategoryMusic(b, chatID, music, text)
-			return
-		}
+		case "/start":
+			_, _ = ui.SendMessageMD(b.bot, chatID, ui.WelcomeMessage(), menuKeyboard)
+		case "/help", "❓ Помощь":
+			_, _ = ui.SendMessageMD(b.bot, chatID, ui.HelpMessage(), nil)
+		default:
+			switch text {
+			case "🔥 Популярные", "Популярные":
+				music := scraper.Search("", "https://ru.hitmoz.org/songs/top-today")
+				SendCategoryMusic(b, chatID, music, text)
+				return
 
-		// Delete previous track list from chat if recorded in Redis
-		oldMsgID := storage.GetUserListMessageID(chatID.ID)
-		if oldMsgID != 0 {
+			case "✨ Новинки", "Новинки":
+				music := scraper.Search("", "https://ru.hitmoz.org/songs/new")
+				SendCategoryMusic(b, chatID, music, text)
+				return
+			}
+
+			// delete previous search results to avoid chat clutter
+			oldMsgID := storage.GetUserListMessageID(chatID.ID)
+			if oldMsgID != 0 {
+				_ = b.bot.DeleteMessage(context.Background(), &telego.DeleteMessageParams{
+					ChatID:    chatID,
+					MessageID: oldMsgID,
+				})
+			}
+
+			// delete the user prompt message for cleaner UI
 			_ = b.bot.DeleteMessage(context.Background(), &telego.DeleteMessageParams{
 				ChatID:    chatID,
-				MessageID: oldMsgID,
+				MessageID: msg.MessageID,
 			})
-		}
 
-		// Delete user message to maintain a clean chat interface
-		_ = b.bot.DeleteMessage(context.Background(), &telego.DeleteMessageParams{
-			ChatID:    chatID,
-			MessageID: msg.MessageID,
+			notifyMsg, _ := ui.SendMessageMD(b.bot, chatID, ui.SearchingMessage(text), nil)
+
+			music := scraper.Search(text, "")
+
+			if notifyMsg != nil && notifyMsg.MessageID != 0 {
+				_ = b.bot.DeleteMessage(context.Background(), &telego.DeleteMessageParams{
+					ChatID:    chatID,
+					MessageID: notifyMsg.MessageID,
+				})
+			}
+
+			if len(music) == 0 {
+				_, _ = ui.SendMessageMD(b.bot, chatID, ui.NotFoundMessage(text), nil)
+				return
+			}
+
+			SendCategoryMusic(b, chatID, music, text)
+		}
+		return
+
+	case msg.Voice != nil:
+		TextTypeAudioFile = "🔍 Распознаю трек из аудио... "
+		fileID = msg.Voice.FileID
+	case msg.Audio != nil:
+		TextTypeAudioFile = "🔍 Распознаю трек из аудио... "
+		fileID = msg.Audio.FileID
+	case msg.Video != nil:
+		TextTypeAudioFile = "🔍 Распознаю трек из видео... "
+		fileID = msg.Video.FileID
+	case msg.VideoNote != nil:
+		TextTypeAudioFile = "🔍 Распознаю трек из видео... "
+		fileID = msg.VideoNote.FileID
+	case msg.Document != nil:
+		TextTypeAudioFile = "🔍 Распознаю трек из документа... "
+		fileID = msg.Document.FileID
+	}
+
+	if TextTypeAudioFile != "" {
+		InfoMessage, _ = b.bot.SendMessage(context.Background(), &telego.SendMessageParams{
+			ChatID: chatID,
+			Text:   TextTypeAudioFile,
 		})
+	}
 
-		// Send temporary searching indicator
-		notifyMsg, _ := ui.SendMessageMD(b.bot, chatID, ui.SearchingMessage(text), nil)
-
-		// Execute search query via scraper
-		music := scraper.Search(text, "")
-
-		// Remove temporary search indicator
-		if notifyMsg != nil && notifyMsg.MessageID != 0 {
-			_ = b.bot.DeleteMessage(context.Background(), &telego.DeleteMessageParams{
-				ChatID:    chatID,
-				MessageID: notifyMsg.MessageID,
-			})
-		}
-
-		if len(music) == 0 {
-			_, _ = ui.SendMessageMD(b.bot, chatID, ui.NotFoundMessage(text), nil)
-			return
-		}
-
-		// Send search results
-		SendCategoryMusic(b, chatID, music, text)
+	if fileID != "" {
+		go b.handleMedia(chatID, fileID, InfoMessage)
+		return
 	}
 }
 
-// handleCallback processes inline button callback queries.
+// handleMedia downloads incoming media, identifies the song via Shazam, and queries the catalog for MP3s.
+func (b *Bot) handleMedia(chatID telego.ChatID, fileID string, InfoMessage *telego.Message) {
+	data, err := b.downloadTelegramFile(fileID)
+	if err != nil {
+		_, _ = b.bot.SendMessage(context.Background(), &telego.SendMessageParams{
+			ChatID: chatID,
+			Text:   fmt.Sprintf("❌ Ошибка при скачивании файла: %v", err),
+		})
+
+		if InfoMessage != nil {
+			_ = b.bot.DeleteMessage(context.Background(), &telego.DeleteMessageParams{
+				ChatID:    chatID,
+				MessageID: InfoMessage.MessageID,
+			})
+		}
+		return
+	}
+
+	trackResp, err := b.shazam.Recognize(data)
+	if err != nil {
+		log.Printf("[SHAZAM ERROR] Ошибка распознавания: %v\n", err)
+		_, _ = b.bot.SendMessage(context.Background(), &telego.SendMessageParams{
+			ChatID: chatID,
+			Text:   "❌ Ошибка при распознавании звука.",
+		})
+
+		if InfoMessage != nil {
+			_ = b.bot.DeleteMessage(context.Background(), &telego.DeleteMessageParams{
+				ChatID:    chatID,
+				MessageID: InfoMessage.MessageID,
+			})
+		}
+		return
+	}
+
+	if trackResp == nil || trackResp.Track == nil {
+		matchesCount := 0
+		if trackResp != nil {
+			matchesCount = len(trackResp.Matches)
+		}
+		log.Printf("[SHAZAM] Совпадений в базе не найдено (matches: %d)\n", matchesCount)
+		_, _ = b.bot.SendMessage(context.Background(), &telego.SendMessageParams{
+			ChatID: chatID,
+			Text:   "😔 Не удалось распознать трек. Возможно, отрывок слишком короткий (нужно от 5 секунд) или в видео много посторонних шумов.",
+		})
+
+		if InfoMessage != nil {
+			_ = b.bot.DeleteMessage(context.Background(), &telego.DeleteMessageParams{
+				ChatID:    chatID,
+				MessageID: InfoMessage.MessageID,
+			})
+		}
+		return
+	}
+
+	artist := trackResp.Track.Subtitle
+	title := trackResp.Track.Title
+	query := fmt.Sprintf("%s - %s", artist, title)
+
+	if InfoMessage != nil {
+		_ = b.bot.DeleteMessage(context.Background(), &telego.DeleteMessageParams{
+			ChatID:    chatID,
+			MessageID: InfoMessage.MessageID,
+		})
+	}
+
+	InfoMessage, _ = b.bot.SendMessage(context.Background(), &telego.SendMessageParams{
+		ChatID: chatID,
+		Text:   fmt.Sprintf("🎵 Найдено: %s\n🔎 Ищу аудиозапись в каталоге...", query),
+	})
+
+	var music []model.Music
+	queries := []string{
+		fmt.Sprintf("%s %s", artist, title),
+		title,
+		artist,
+	}
+
+	for _, q := range queries {
+		q = strings.TrimSpace(q)
+		if q == "" {
+			continue
+		}
+		music = scraper.Search(q, "")
+		if len(music) > 0 {
+			break
+		}
+	}
+
+	if len(music) == 0 {
+		_, _ = b.bot.SendMessage(context.Background(), &telego.SendMessageParams{
+			ChatID: chatID,
+			Text:   fmt.Sprintf("Музыка %s определена, но в базе для скачивания её не нашлось.", query),
+		})
+
+		if InfoMessage != nil {
+			_ = b.bot.DeleteMessage(context.Background(), &telego.DeleteMessageParams{
+				ChatID:    chatID,
+				MessageID: InfoMessage.MessageID,
+			})
+		}
+		return
+	}
+
+	SendCategoryMusic(b, chatID, music, query)
+}
+
+// downloadTelegramFile downloads a file from Telegram servers into memory by its file ID.
+func (b *Bot) downloadTelegramFile(fileID string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	fileInfo, err := b.bot.GetFile(ctx, &telego.GetFileParams{
+		FileID: fileID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("получение информации о файле: %w", err)
+	}
+
+	downloadURL := b.bot.FileDownloadURL(fileInfo.FilePath)
+	log.Printf("[MEDIA URL] Ссылка: %s\n", downloadURL)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("запрос на скачивание: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP статус %s", resp.Status)
+	}
+
+	return io.ReadAll(resp.Body)
+}
+
+// handleCallback handles inline button interactions such as pagination and track download requests.
 func (b *Bot) handleCallback(cq *telego.CallbackQuery) {
+	b.trackUser(&cq.From)
 	chatID := cq.Message.GetChat().ChatID()
 
-	// Page counter indicator click (displays a popup alert)
+	// page indicator toast
 	if strings.HasPrefix(cq.Data, "noop") {
 		p := strings.TrimPrefix(cq.Data, "noop_")
 		toastText := "Текущая страница"
@@ -162,7 +363,7 @@ func (b *Bot) handleCallback(cq *telego.CallbackQuery) {
 		return
 	}
 
-	// Handle pagination page navigation
+	// page switch
 	if strings.HasPrefix(cq.Data, "page_") {
 		_ = b.bot.AnswerCallbackQuery(context.Background(), &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: cq.ID,
@@ -196,12 +397,11 @@ func (b *Bot) handleCallback(cq *telego.CallbackQuery) {
 		return
 	}
 
-	// Acknowledge download button callback query
 	_ = b.bot.AnswerCallbackQuery(context.Background(), &telego.AnswerCallbackQueryParams{
 		CallbackQueryID: cq.ID,
 	})
 
-	// Handle track download action
+	// track download
 	if strings.HasPrefix(cq.Data, "dl_") {
 		idx, err := strconv.Atoi(strings.TrimPrefix(cq.Data, "dl_"))
 		if err != nil {
@@ -217,7 +417,6 @@ func (b *Bot) handleCallback(cq *telego.CallbackQuery) {
 
 		track := tracks[idx]
 
-		// Send download in-progress notification
 		loadingMsg, _ := ui.SendMessageMD(b.bot, chatID, ui.TrackLoadingMessage(track), nil)
 
 		loadingMsgID := 0
@@ -240,7 +439,7 @@ func (b *Bot) handleCallback(cq *telego.CallbackQuery) {
 	}
 }
 
-// sendTrackAudio downloads and sends the audio file to the user.
+// sendTrackAudio downloads the MP3 file for a track and sends it to the user with ID3 metadata and caption.
 func (b *Bot) sendTrackAudio(chatID telego.ChatID, track model.Music) error {
 	file, err := scraper.Download(track)
 	if err != nil {
@@ -258,7 +457,7 @@ func (b *Bot) sendTrackAudio(chatID telego.ChatID, track model.Music) error {
 
 	_, err = b.bot.SendAudio(context.Background(), audioParams)
 	if err != nil {
-		// Fallback: send with plain text caption if markdown parsing fails
+		// fallback to plain caption if telegram markdown fails
 		_, _ = file.Seek(0, io.SeekStart)
 		plainCaption := fmt.Sprintf("🎧 %s — %s (%s)", track.Author, track.Title, track.Duration)
 		fallbackParams := tu.Audio(chatID, tu.File(file)).

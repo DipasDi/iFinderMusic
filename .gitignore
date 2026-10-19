@@ -38,3 +38,8 @@ desktop.ini
 # Test and coverage artifacts
 *.out
 cover.out
+
+# User data
+data/
+users.json
+

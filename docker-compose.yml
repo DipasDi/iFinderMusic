@@ -31,6 +31,7 @@ services:
       - REDIS_ADDR=redis:6379
     volumes:
       - /tmp:/tmp
+      - ./users.json:/app/users.json
 
 volumes:
   redis_data:

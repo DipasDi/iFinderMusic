@@ -8,7 +8,7 @@ import (
 	tu "github.com/mymmrac/telego/telegoutil"
 )
 
-// EscapeMD escapes Telegram MarkdownV2 special characters.
+// EscapeMD escapes characters reserved by Telegram MarkdownV2
 func EscapeMD(s string) string {
 	var sb strings.Builder
 	for _, r := range s {
@@ -21,7 +21,7 @@ func EscapeMD(s string) string {
 	return sb.String()
 }
 
-// EscapeCode escapes characters inside inline code blocks in MarkdownV2.
+// EscapeCode escapes backticks and backslashes inside `...` code blocks
 func EscapeCode(s string) string {
 	var sb strings.Builder
 	for _, r := range s {
@@ -34,7 +34,7 @@ func EscapeCode(s string) string {
 	return sb.String()
 }
 
-// CleanMarkdownForFallback strips escaping slashes for plain text fallback delivery.
+// CleanMarkdownForFallback strips escaping slashes if telegram rejects markdown and we need to retry as plain text
 func CleanMarkdownForFallback(s string) string {
 	replacer := strings.NewReplacer(
 		"\\_", "_",
@@ -60,7 +60,7 @@ func CleanMarkdownForFallback(s string) string {
 	return replacer.Replace(s)
 }
 
-// SendMessageMD sends a message with MarkdownV2 formatting, falling back to plain text if parsing fails.
+// SendMessageMD sends a Telegram message in MarkdownV2 mode with automatic fallback to plain text if entity parsing fails.
 func SendMessageMD(bot *telego.Bot, chatID telego.ChatID, text string, replyMarkup telego.ReplyMarkup) (*telego.Message, error) {
 	params := tu.Message(chatID, text).WithParseMode(telego.ModeMarkdownV2)
 	if replyMarkup != nil {
@@ -79,7 +79,7 @@ func SendMessageMD(bot *telego.Bot, chatID telego.ChatID, text string, replyMark
 	return msg, nil
 }
 
-// EditMessageMD edits a message with MarkdownV2 formatting, falling back to plain text if parsing fails.
+// EditMessageMD edits an existing Telegram message in MarkdownV2 mode with automatic fallback to plain text.
 func EditMessageMD(bot *telego.Bot, chatID telego.ChatID, messageID int, text string, replyMarkup *telego.InlineKeyboardMarkup) (*telego.Message, error) {
 	params := tu.EditMessageText(chatID, messageID, text).
 		WithParseMode(telego.ModeMarkdownV2).

@@ -20,7 +20,7 @@ var defaultHeader = func(r *colly.Request) {
 	r.Headers.Set("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7")
 }
 
-// Search searches for music tracks on ru.hitmoz.org by keyword query or custom category URL.
+// Search scrapes tracks matching the query or fetches tracks from the specified href URL.
 func Search(query string, href string) []model.Music {
 	var music []model.Music
 	c := colly.NewCollector(
@@ -30,7 +30,7 @@ func Search(query string, href string) []model.Music {
 	c.OnRequest(defaultHeader)
 
 	c.OnError(func(r *colly.Response, err error) {
-		fmt.Printf("Scraper request error [%d]: %v\n", r.StatusCode, err)
+		fmt.Printf("scrape error [%d]: %v\n", r.StatusCode, err)
 	})
 
 	c.OnHTML(".tracks__item", func(e *colly.HTMLElement) {
@@ -59,7 +59,7 @@ func Search(query string, href string) []model.Music {
 	return music
 }
 
-// Download downloads an MP3 track into a temporary file on disk.
+// Download streams the audio file for the given track into a temporary MP3 file on disk.
 func Download(track model.Music) (*os.File, error) {
 	rawURL := track.DownloadLink
 	if !strings.HasPrefix(rawURL, "http") {
@@ -94,7 +94,7 @@ func Download(track model.Music) (*os.File, error) {
 	if resp.StatusCode != http.StatusOK {
 		tempFile.Close()
 		_ = os.Remove(tempFile.Name())
-		return nil, fmt.Errorf("server returned status: %s", resp.Status)
+		return nil, fmt.Errorf("download server returned %s", resp.Status)
 	}
 
 	if _, err := io.Copy(tempFile, resp.Body); err != nil {
