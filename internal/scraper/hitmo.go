@@ -20,7 +20,10 @@ var defaultHeader = func(r *colly.Request) {
 	r.Headers.Set("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7")
 }
 
+<<<<<<< HEAD
 // Search scrapes tracks matching the query or fetches tracks from the specified href URL.
+=======
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func Search(query string, href string) []model.Music {
 	var music []model.Music
 	c := colly.NewCollector(
@@ -59,7 +62,10 @@ func Search(query string, href string) []model.Music {
 	return music
 }
 
+<<<<<<< HEAD
 // Download streams the audio file for the given track into a temporary MP3 file on disk.
+=======
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func Download(track model.Music) (*os.File, error) {
 	rawURL := track.DownloadLink
 	if !strings.HasPrefix(rawURL, "http") {
@@ -103,6 +109,7 @@ func Download(track model.Music) (*os.File, error) {
 		return nil, err
 	}
 
+	// rewind cursor so caller can read from start
 	_, _ = tempFile.Seek(0, io.SeekStart)
 	return tempFile, nil
 }

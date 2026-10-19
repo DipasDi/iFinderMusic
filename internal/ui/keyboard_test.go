@@ -9,7 +9,10 @@ import (
 	"random/internal/model"
 )
 
+<<<<<<< HEAD
 // TestButtonTrackText tests truncation and formatting of music button text.
+=======
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestButtonTrackText(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -98,7 +101,10 @@ func TestButtonTrackText(t *testing.T) {
 	}
 }
 
+<<<<<<< HEAD
 // TestMainMenuKeyboard tests the structure and layout of the main reply keyboard.
+=======
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestMainMenuKeyboard(t *testing.T) {
 	kb := MainMenuKeyboard()
 	if kb == nil {
@@ -113,6 +119,10 @@ func TestMainMenuKeyboard(t *testing.T) {
 		t.Fatalf("expected 2 rows in keyboard, got %d", len(kb.Keyboard))
 	}
 
+<<<<<<< HEAD
+=======
+	// Row 0: "🔥 Популярные", "✨ Новинки"
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 	if len(kb.Keyboard[0]) != 2 {
 		t.Fatalf("expected 2 buttons in row 0, got %d", len(kb.Keyboard[0]))
 	}
@@ -123,6 +133,10 @@ func TestMainMenuKeyboard(t *testing.T) {
 		t.Errorf("expected button 0,1 text '✨ Новинки', got %q", kb.Keyboard[0][1].Text)
 	}
 
+<<<<<<< HEAD
+=======
+	// Row 1: "❓ Помощь"
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 	if len(kb.Keyboard[1]) != 1 {
 		t.Fatalf("expected 1 button in row 1, got %d", len(kb.Keyboard[1]))
 	}
@@ -131,7 +145,10 @@ func TestMainMenuKeyboard(t *testing.T) {
 	}
 }
 
+<<<<<<< HEAD
 // TestBuildTracksKeyboard tests inline keyboard pagination and callback formatting.
+=======
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestBuildTracksKeyboard(t *testing.T) {
 	generateTracks := func(count int) []model.Music {
 		tracks := make([]model.Music, count)
@@ -159,6 +176,10 @@ func TestBuildTracksKeyboard(t *testing.T) {
 		tracks := generateTracks(5)
 		kb := BuildTracksKeyboard(tracks, 0)
 
+<<<<<<< HEAD
+=======
+		// 5 tracks -> 5 rows, no pagination row because totalPages == 1
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 		if len(kb.InlineKeyboard) != 5 {
 			t.Fatalf("expected 5 rows, got %d", len(kb.InlineKeyboard))
 		}
@@ -176,14 +197,25 @@ func TestBuildTracksKeyboard(t *testing.T) {
 	})
 
 	t.Run("first page of multi-page tracks has next button but no prev button", func(t *testing.T) {
+<<<<<<< HEAD
 		tracks := generateTracks(25)
 		kb := BuildTracksKeyboard(tracks, 0)
 
+=======
+		tracks := generateTracks(25) // 25 tracks -> 3 pages (10 + 10 + 5)
+		kb := BuildTracksKeyboard(tracks, 0)
+
+		// 10 track rows + 1 pagination row = 11 rows
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 		if len(kb.InlineKeyboard) != 11 {
 			t.Fatalf("expected 11 rows, got %d", len(kb.InlineKeyboard))
 		}
 
 		navRow := kb.InlineKeyboard[10]
+<<<<<<< HEAD
+=======
+		// On page 0: only "📄 1/3" and "Вперёд ➡️" (2 buttons)
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 		if len(navRow) != 2 {
 			t.Fatalf("expected 2 nav buttons on page 0, got %d", len(navRow))
 		}
@@ -205,6 +237,10 @@ func TestBuildTracksKeyboard(t *testing.T) {
 		}
 
 		navRow := kb.InlineKeyboard[10]
+<<<<<<< HEAD
+=======
+		// On page 1: "⬅️ Назад", "📄 2/3", "Вперёд ➡️" (3 buttons)
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 		if len(navRow) != 3 {
 			t.Fatalf("expected 3 nav buttons on middle page, got %d", len(navRow))
 		}
@@ -219,6 +255,10 @@ func TestBuildTracksKeyboard(t *testing.T) {
 			t.Errorf("next button mismatch: text=%q, callback=%q", navRow[2].Text, navRow[2].CallbackData)
 		}
 
+<<<<<<< HEAD
+=======
+		// First track on page 1 should have callback dl_10
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 		if kb.InlineKeyboard[0][0].CallbackData != "dl_10" {
 			t.Errorf("expected first track on page 1 to have callback dl_10, got %q", kb.InlineKeyboard[0][0].CallbackData)
 		}
@@ -228,11 +268,19 @@ func TestBuildTracksKeyboard(t *testing.T) {
 		tracks := generateTracks(25)
 		kb := BuildTracksKeyboard(tracks, 2)
 
+<<<<<<< HEAD
+=======
+		// 5 tracks on last page + 1 pagination row = 6 rows
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 		if len(kb.InlineKeyboard) != 6 {
 			t.Fatalf("expected 6 rows, got %d", len(kb.InlineKeyboard))
 		}
 
 		navRow := kb.InlineKeyboard[5]
+<<<<<<< HEAD
+=======
+		// On last page: "⬅️ Назад" and "📄 3/3" (2 buttons)
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 		if len(navRow) != 2 {
 			t.Fatalf("expected 2 nav buttons on last page, got %d", len(navRow))
 		}

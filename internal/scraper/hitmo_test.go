@@ -10,7 +10,10 @@ import (
 	"random/internal/model"
 )
 
+<<<<<<< HEAD
 // TestDownload_Success verifies successful audio download from a mock HTTP server.
+=======
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestDownload_Success(t *testing.T) {
 	fakeAudioBytes := []byte("ID3_FAKE_MP3_STREAM_CONTENT_123456789")
 
@@ -54,7 +57,10 @@ func TestDownload_Success(t *testing.T) {
 	}
 }
 
+<<<<<<< HEAD
 // TestDownload_HttpErrors verifies proper error handling for 404 and 500 HTTP responses.
+=======
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestDownload_HttpErrors(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/notfound" {
@@ -96,7 +102,10 @@ func TestDownload_HttpErrors(t *testing.T) {
 	})
 }
 
+<<<<<<< HEAD
 // TestDownload_InvalidUrl verifies that attempting to download with an invalid URL fails gracefully.
+=======
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func TestDownload_InvalidUrl(t *testing.T) {
 	track := model.Music{
 		DownloadLink: "http://invalid-url\x7f/file.mp3",

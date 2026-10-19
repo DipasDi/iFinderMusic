@@ -60,7 +60,10 @@ func CleanMarkdownForFallback(s string) string {
 	return replacer.Replace(s)
 }
 
+<<<<<<< HEAD
 // SendMessageMD sends a Telegram message in MarkdownV2 mode with automatic fallback to plain text if entity parsing fails.
+=======
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func SendMessageMD(bot *telego.Bot, chatID telego.ChatID, text string, replyMarkup telego.ReplyMarkup) (*telego.Message, error) {
 	params := tu.Message(chatID, text).WithParseMode(telego.ModeMarkdownV2)
 	if replyMarkup != nil {
@@ -69,6 +72,7 @@ func SendMessageMD(bot *telego.Bot, chatID telego.ChatID, text string, replyMark
 
 	msg, err := bot.SendMessage(context.Background(), params)
 	if err != nil {
+		// fallback to plain text if telegram rejected markdown entities
 		plainParams := tu.Message(chatID, CleanMarkdownForFallback(text))
 		if replyMarkup != nil {
 			plainParams.WithReplyMarkup(replyMarkup)
@@ -79,7 +83,10 @@ func SendMessageMD(bot *telego.Bot, chatID telego.ChatID, text string, replyMark
 	return msg, nil
 }
 
+<<<<<<< HEAD
 // EditMessageMD edits an existing Telegram message in MarkdownV2 mode with automatic fallback to plain text.
+=======
+>>>>>>> 0c59af3e9076fadbe77438343714ce617cca44d0
 func EditMessageMD(bot *telego.Bot, chatID telego.ChatID, messageID int, text string, replyMarkup *telego.InlineKeyboardMarkup) (*telego.Message, error) {
 	params := tu.EditMessageText(chatID, messageID, text).
 		WithParseMode(telego.ModeMarkdownV2).
