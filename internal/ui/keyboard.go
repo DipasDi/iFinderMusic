@@ -92,10 +92,18 @@ func YandexMusicKeyboard(author, title string) *telego.InlineKeyboardMarkup {
 	if query == "" {
 		return nil
 	}
-	searchURL := "https://music.yandex.ru/search?text=" + url.QueryEscape(query)
 	return tu.InlineKeyboard(
 		tu.InlineKeyboardRow(
-			tu.InlineKeyboardButton("🎧 Яндекс Музыка").WithURL(searchURL),
+			tu.InlineKeyboardButton("🎧 Яндекс Музыка").WithURL("https://music.yandex.ru/search?text="+url.QueryEscape(query)),
+		),
+		tu.InlineKeyboardRow(
+			tu.InlineKeyboardButton("🎧 Spotify ").WithURL("https://open.spotify.com/search/"+url.QueryEscape(query)),
+		),
+		tu.InlineKeyboardRow(
+			tu.InlineKeyboardButton("🎧 Apple Music ").WithURL("https://music.apple.com/search?term="+url.QueryEscape(query)+"&app=music"),
+		),
+		tu.InlineKeyboardRow(
+			tu.InlineKeyboardButton("🎧 SoundCloud ").WithURL("https://soundcloud.com/search?q="+url.QueryEscape(query)),
 		),
 	)
 }
