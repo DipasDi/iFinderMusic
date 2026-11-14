@@ -15,7 +15,7 @@
 ---
 
 This is not the complete project, but rather just the part involving the bot **@IFinderMusicBot**.
-There is also a website available: [**Сайт**](https://music.dipass.ru/)
+There is also a website available: [**WEB**](https://music.dipass.ru/)
 
 ## ✨ Features
 
