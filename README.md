@@ -15,7 +15,7 @@
 ---
 
 This is not the complete project, but rather just the part involving the bot **@IFinderMusicBot**.
-There is also a website available: [Сайт](https://music.dipass.ru/)
+There is also a website available: [**Сайт**](https://music.dipass.ru/)
 
 ## ✨ Features
 
@@ -49,7 +49,7 @@ flowchart LR
 ### Docker Compose (Recommended)
 
 ```bash
-git clone [https://github.com/your-username/ifindermusic.git](https://github.com/your-username/ifindermusic.git)
+git clone https://github.com/your-username/ifindermusic.git
 cd ifindermusic
 cp .env.example .env
 ```
