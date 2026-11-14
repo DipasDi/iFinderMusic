@@ -14,6 +14,9 @@
 
 ---
 
+This is not the complete project, but rather just the part involving the bot @IFinderMusicBot.
+There is also a website available: music.dipass.ru
+
 ## ✨ Features
 
 - 🔎 **Music Search** — Find tracks by artist or title with duration tags and ID3 metadata.
